@@ -1,0 +1,728 @@
+name: AzərPlay APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Oyun fayllarini yarat
+        run: |
+          mkdir -p www
+          cat > www/index.html <<'AZEOF'
+          <!doctype html>
+          <html lang="az">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+          <title>AzərPlay</title>
+          <link rel="stylesheet" href="style.css">
+          </head>
+          <body>
+          <div id="app"></div>
+          <div id="toast"></div>
+          <script src="core.js"></script>
+          <script src="games/zeka.js"></script>
+          <script src="games/arkada.js"></script>
+          <script src="games/idman.js"></script>
+          <script src="games/macera.js"></script>
+          <script src="games/strat.js"></script>
+          <script src="games/sim.js"></script>
+          <script>AZ.init()</script>
+          </body>
+          </html>
+          AZEOF
+          mkdir -p www
+          cat > www/style.css <<'AZEOF'
+          *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+          html,body{margin:0;height:100%;background:#0b1230;color:#fff;font-family:system-ui,-apple-system,Roboto,sans-serif;overflow:hidden}
+          button{font-family:inherit}
+          #app{height:100dvh;display:flex;flex-direction:column;position:relative;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+          .top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#101b45;flex-shrink:0}
+          .logo{font-size:24px;font-weight:900;color:#4cc3ff;flex:1;letter-spacing:.5px}
+          .logo span{color:#ffc928}
+          .coins{background:#1d2b63;border-radius:999px;padding:6px 12px;font-weight:800;color:#ffd54a;white-space:nowrap}
+          .back{background:#1d2b63;color:#fff;border:0;border-radius:12px;width:38px;height:38px;font-size:26px;line-height:1}
+          .ttl{flex:1;font-weight:800;font-size:17px}
+          .sc{font-weight:800;color:#4cc3ff;min-width:40px;text-align:right}
+          .tabs{display:flex;gap:8px;overflow-x:auto;padding:10px 12px;flex-shrink:0}
+          .tab{white-space:nowrap;border:0;border-radius:999px;padding:8px 14px;background:#1a2658;color:#cfe0ff;font-weight:700}
+          .tab.on{background:#ffc928;color:#222}
+          .grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:4px 12px 16px;align-content:start}
+          .card{border:0;border-radius:18px;padding:16px 8px;color:#fff;display:flex;flex-direction:column;align-items:center;gap:4px}
+          .card .ic{font-size:44px}.card .nm{font-weight:800;font-size:15px;text-align:center}.card .bs{font-size:12px;opacity:.85}
+          .c-zeka{background:linear-gradient(160deg,#6a3fd1,#3a1f86)}
+          .c-arkada{background:linear-gradient(160deg,#e0393a,#8d1417)}
+          .c-idman{background:linear-gradient(160deg,#2fae5c,#12643a)}
+          .c-macera{background:linear-gradient(160deg,#1e9bd6,#115a8c)}
+          .c-strat{background:linear-gradient(160deg,#f0a21b,#a36508)}
+          .c-sim{background:linear-gradient(160deg,#e0743a,#8a3a12)}
+          .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px;touch-action:none;overflow:hidden;min-height:0}
+          .stage canvas{border-radius:14px;touch-action:none;max-width:100%}
+          .msg{font-size:16px;color:#9fc3ff;text-align:center;min-height:26px;font-weight:600}
+          .board{display:grid;gap:4px;touch-action:none}
+          .cell{border:0;border-radius:10px;background:#1b2a5c;color:#fff;font-size:clamp(18px,6vw,34px);display:flex;align-items:center;justify-content:center;padding:0;font-weight:800}
+          .cell.sel{outline:3px solid #ffc928}
+          .cell.ok{background:#1f7a45}
+          .t{color:#222}
+          .lamp{background:#26305e}.lamp.on{background:#ffd54a;box-shadow:0 0 16px #ffd54a}
+          .go{background:#c8963e;font-size:clamp(14px,5vw,26px);border-radius:4px}
+          .c4{background:#1d3fa5;border-radius:50%}
+          .rv{background:#1e7a46}
+          .xo{background:#223273;font-size:clamp(30px,14vw,60px)}
+          .num{background:#3a56b8;font-size:clamp(26px,10vw,48px)}
+          .quiz{width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px;padding:6px}
+          .q{font-size:20px;font-weight:800;text-align:center;margin-bottom:6px}
+          .q.big{font-size:46px}
+          .opt{padding:14px;border-radius:14px;border:2px solid #2d4a9c;background:#15235a;color:#fff;font-size:18px;font-weight:700}
+          .opt.good{background:#1f7a45;border-color:#1f7a45}
+          .opt.bad{background:#a32424;border-color:#a32424}
+          .big{font-size:88px;background:#1b2a5c;border:0;border-radius:50%;width:170px;height:170px;color:#fff}
+          .btn{display:block;width:100%;max-width:360px;margin-top:10px;padding:14px;border:0;border-radius:14px;background:#ffc928;color:#222;font-weight:800;font-size:17px}
+          .btn.alt{background:#2d4a9c;color:#fff}
+          .glass{position:relative;width:140px;height:230px;border:4px solid #cfe3ff;border-top:0;border-radius:0 0 44px 44px;background:rgba(255,255,255,.06);margin:14px 0}
+          .fill{position:absolute;bottom:0;left:0;right:0;height:0;background:#b5381c;border-radius:0 0 38px 38px}
+          .tline{position:absolute;left:-16px;right:-16px;height:4px;background:#ffd54a;border-radius:2px}
+          .pour{width:100%;max-width:300px;padding:20px;border:0;border-radius:18px;background:#e0743a;color:#fff;font-size:20px;font-weight:800;touch-action:none}
+          .kb{width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px}
+          .sk{display:flex;align-items:center;gap:12px;background:#1b2a5c;border:0;border-radius:14px;padding:14px;color:#fff;font-size:30px}
+          .bar{flex:1;height:20px;background:#0b1230;border-radius:10px;position:relative;overflow:hidden}
+          .bf{position:absolute;left:0;top:0;bottom:0;width:0}
+          .pz{position:absolute;left:70%;width:25%;top:0;bottom:0;background:rgba(255,255,255,.3)}
+          .ovl{position:absolute;inset:0;background:rgba(5,8,24,.88);display:flex;align-items:center;justify-content:center;z-index:5}
+          .box{background:#16235a;border-radius:22px;padding:24px;text-align:center;width:min(86%,320px)}
+          .box h2{margin:0 0 8px}.earn{font-size:26px;font-weight:900;color:#ffd54a;margin:6px 0}
+          #toast{position:fixed;left:50%;bottom:40px;transform:translate(-50%,30px);background:#ffc928;color:#222;font-weight:800;padding:10px 18px;border-radius:999px;opacity:0;transition:.3s;pointer-events:none;z-index:9}
+          #toast.show{opacity:1;transform:translate(-50%,0)}
+          AZEOF
+          mkdir -p www
+          cat > www/core.js <<'AZEOF'
+          (function(){
+          const AZ=window.AZ={games:[],reg(g){this.games.push(g)}};
+          const $=s=>document.querySelector(s);
+          const S={coins:0,best:{},day:''};
+          try{Object.assign(S,JSON.parse(localStorage.getItem('azp')||'{}'))}catch(e){}
+          const save=()=>{try{localStorage.setItem('azp',JSON.stringify(S))}catch(e){}};
+          const h=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.innerHTML=x;return e};
+          Object.assign(AZ,{S,h,
+           rnd:(a,b)=>a+Math.floor(Math.random()*(b-a+1)),
+           pick:a=>a[Math.floor(Math.random()*a.length)],
+           shuffle:a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a},
+           info:(root,t)=>{const e=h('div','msg',t);root.append(e);return e},
+           board:(root,c,r=c)=>{const b=h('div','board');b.style.gridTemplateColumns=`repeat(${c},1fr)`;b.style.gridTemplateRows=`repeat(${r},1fr)`;b.style.aspectRatio=c+'/'+r;b.style.width=`min(100%,calc((100dvh - 210px)*${c/r}))`;root.append(b);return b}
+          });
+          const CATS=[['all','🎮','Hamısı'],['zeka','🧠','Zəka'],['arkada','🕹️','Arkada'],['idman','⚽','İdman'],['macera','🏔️','Macəra'],['strat','♟️','Strategiya'],['sim','🍵','Simulyator']];
+          let cat='all',cur=null,cleanups=[],ac,tt;
+          const toast=m=>{const e=$('#toast');e.textContent=m;e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),2500)};
+          const upd=()=>document.querySelectorAll('.coins').forEach(e=>e.textContent='🪙 '+S.coins);
+          const stop=()=>{cleanups.forEach(f=>{try{f()}catch(e){}});cleanups=[]};
+
+          function home(){
+            stop();cur=null;
+            const app=$('#app');app.innerHTML='';
+            const top=h('div','top','<div class="logo">Azər<span>Play</span></div><div class="coins"></div>');
+            const tabs=h('div','tabs');
+            CATS.forEach(([k,i,n])=>{const b=h('button','tab'+(k===cat?' on':''),i+' '+n);b.onclick=()=>{cat=k;home()};tabs.append(b)});
+            const grid=h('div','grid');
+            AZ.games.filter(g=>cat==='all'||g.cat===cat).forEach(g=>{
+              const c=h('button','card c-'+g.cat,`<div class="ic">${g.icon}</div><div class="nm">${g.name}</div><div class="bs">${S.best[g.id]?'🏆 '+S.best[g.id]:'Yeni'}</div>`);
+              c.onclick=()=>play(g);grid.append(c)});
+            app.append(top,tabs,grid);upd();
+          }
+
+          function play(g){
+            stop();cur=g;
+            const app=$('#app');app.innerHTML='';
+            const top=h('div','top');
+            const back=h('button','back','‹');back.onclick=home;
+            const sc=h('div','sc','');
+            top.append(back,h('div','ttl',g.name),sc,h('div','coins'));
+            const root=h('div','stage');app.append(top,root);upd();
+            let done=false;
+            const api={
+              root,
+              score(n){sc.textContent=n},
+              on(f){cleanups.push(f)},
+              raf(fn){let id,l=performance.now(),run=true;const t=n=>{if(!run)return;const dt=Math.min(.05,(n-l)/1000);l=n;fn(dt);if(run)id=requestAnimationFrame(t)};id=requestAnimationFrame(t);cleanups.push(()=>{run=false;cancelAnimationFrame(id)})},
+              every(ms,fn){const id=setInterval(fn,ms);cleanups.push(()=>clearInterval(id))},
+              after(ms,fn){const id=setTimeout(fn,ms);cleanups.push(()=>clearTimeout(id))},
+              cv(w,hh){const c=h('canvas');c.width=w;c.height=hh;c.style.aspectRatio=w+'/'+hh;c.style.width=`min(100%,calc((100dvh - 150px)*${w/hh}))`;root.append(c);
+                return{c,x:c.getContext('2d'),w,h:hh,pos:e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*w/r.width,(e.clientY-r.top)*hh/r.height]}}},
+              swipe(el,cb){let s=null;
+                el.addEventListener('pointerdown',e=>{s=[e.clientX,e.clientY]});
+                el.addEventListener('pointerup',e=>{if(!s)return;const dx=e.clientX-s[0],dy=e.clientY-s[1];s=null;if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;cb(Math.abs(dx)>Math.abs(dy)?(dx>0?'r':'l'):(dy>0?'d':'u'))});
+                const k=e=>{const m={ArrowLeft:'l',ArrowRight:'r',ArrowUp:'u',ArrowDown:'d'}[e.key];if(m)cb(m)};
+                addEventListener('keydown',k);cleanups.push(()=>removeEventListener('keydown',k))},
+              beep(f=440,d=.08){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),v=ac.createGain();o.frequency.value=f;v.gain.value=.04;o.connect(v);v.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}},
+              over(score){
+                if(done)return;done=true;stop();
+                const earn=score>0?Math.min(60,Math.max(1,Math.round(score*(g.k||1)))):0;
+                S.coins+=earn;const nb=score>(S.best[g.id]||0);if(nb)S.best[g.id]=score;save();upd();
+                const o=h('div','ovl',`<div class="box"><h2>Oyun bitdi</h2><p>Xal: <b>${score}</b>${nb&&score>0?' 🏆 Yeni rekord!':''}</p><div class="earn">+${earn} 🪙</div></div>`);
+                const b1=h('button','btn','Yenidən oyna');b1.onclick=()=>play(g);
+                const b2=h('button','btn alt','Menyu');b2.onclick=home;
+                o.firstChild.append(b1,b2);app.append(o);
+              }
+            };
+            g.start(root,api);
+          }
+
+          AZ.init=()=>{
+            const d=new Date().toISOString().slice(0,10);let b=0;
+            if(S.day!==d){S.day=d;S.coins+=20;save();b=1}
+            home();if(b)toast('Gündəlik bonus: +20 🪙');
+            document.addEventListener('contextmenu',e=>e.preventDefault());
+            try{const A=window.Capacitor.Plugins.App;A.addListener('backButton',()=>{cur?home():A.exitApp()})}catch(e){}
+          };
+          })();
+          AZEOF
+          mkdir -p www/games
+          cat > www/games/zeka.js <<'AZEOF'
+          (()=>{
+          const{h,rnd,pick,shuffle}=AZ;
+
+          // 1. Xalça Puzzle (3-lü uyğunlaşdırma)
+          AZ.reg({id:'xalca',name:'Xalça Puzzle',cat:'zeka',icon:'🧶',k:.12,start(root,api){
+           const N=6,T=['🔴','🟠','🟡','🟢','🔵','🟣'];let g=[],sel=null,moves=20,score=0,busy=false;
+           const info=AZ.info(root,''),bd=AZ.board(root,N),cells=[],r6=()=>rnd(0,5);
+           const find=()=>{const m=new Set();for(let r=0;r<N;r++)for(let c=0;c<N;c++){const i=r*N+c,v=g[i];if(v<0)continue;
+            if(c<N-2&&g[i+1]===v&&g[i+2]===v){m.add(i);m.add(i+1);m.add(i+2)}
+            if(r<N-2&&g[i+N]===v&&g[i+2*N]===v){m.add(i);m.add(i+N);m.add(i+2*N)}}return m};
+           do{g=Array.from({length:N*N},r6)}while(find().size);
+           const draw=()=>{g.forEach((v,i)=>{cells[i].textContent=v<0?'':T[v];cells[i].classList.toggle('sel',i===sel)});info.textContent=`Gediş: ${moves} · Xal: ${score}`;api.score(score)};
+           const fall=()=>{for(let c=0;c<N;c++){const col=[];for(let r=N-1;r>=0;r--)if(g[r*N+c]>=0)col.push(g[r*N+c]);for(let r=N-1;r>=0;r--)g[r*N+c]=col.length?col.shift():r6()}};
+           const resolve=()=>{const m=find();
+            if(!m.size){busy=false;draw();if(moves<=0)api.after(500,()=>api.over(score));return}
+            score+=m.size*5;m.forEach(i=>g[i]=-1);draw();api.beep(600,.06);
+            api.after(250,()=>{fall();draw();api.after(250,resolve)})};
+           const tap=i=>{if(busy||moves<=0)return;if(sel===null){sel=i;draw();return}
+            const a=sel;sel=null;const d=Math.abs(a-i);
+            if(!(d===N||(d===1&&Math.floor(a/N)===Math.floor(i/N)))){sel=i;draw();return}
+            [g[a],g[i]]=[g[i],g[a]];
+            if(!find().size){[g[a],g[i]]=[g[i],g[a]];draw();return}
+            moves--;busy=true;resolve()};
+           for(let i=0;i<N*N;i++){const b=h('button','cell');b.onclick=()=>tap(i);bd.append(b);cells.push(b)}
+           draw()}});
+
+          // 2. Paxlava Puzzle (2048 üslubunda)
+          AZ.reg({id:'paxlava',name:'Paxlava Puzzle',cat:'zeka',icon:'🍯',k:.02,start(root,api){
+           const N=4;let g=Array(16).fill(0),score=0;const info=AZ.info(root,''),bd=AZ.board(root,N),cells=[];
+           for(let i=0;i<16;i++){const b=h('div','cell t');bd.append(b);cells.push(b)}
+           const add=()=>{const e=g.map((v,i)=>v?-1:i).filter(i=>i>=0);if(e.length)g[pick(e)]=Math.random()<.9?2:4};
+           const draw=()=>{g.forEach((v,i)=>{cells[i].textContent=v||'';cells[i].style.background=v?`hsl(${45+Math.log2(v)*22},85%,${72-Math.log2(v)*3}%)`:''});info.textContent='Sürüşdür! Xal: '+score;api.score(score)};
+           const line=a=>{const r=a.filter(v=>v);for(let i=0;i<r.length-1;i++)if(r[i]===r[i+1]){r[i]*=2;score+=r[i];r.splice(i+1,1)}while(r.length<N)r.push(0);return r};
+           const can=()=>g.includes(0)||g.some((v,i)=>(i%N<N-1&&g[i+1]===v)||(i<N*(N-1)&&g[i+N]===v));
+           const move=d=>{const o=g.join();for(let k=0;k<N;k++){const idx=[];for(let j=0;j<N;j++)idx.push(d==='l'?k*N+j:d==='r'?k*N+N-1-j:d==='u'?j*N+k:(N-1-j)*N+k);const r=line(idx.map(i=>g[i]));idx.forEach((i,j)=>g[i]=r[j])}
+            if(g.join()!==o){add();draw();api.beep(400,.04);if(!can())api.after(600,()=>api.over(score))}};
+           add();add();draw();api.swipe(root,move)}});
+
+          // 3. Yaddaş Kartları
+          AZ.reg({id:'yaddas',name:'Yaddaş Kartları',cat:'zeka',icon:'🃏',k:.4,start(root,api){
+           const E=['🍯','🍵','🏔️','🐎','🐍','🎱','🧶','🍇'];const c=shuffle([...E,...E]);let open=[],found=0,moves=0,lock=false;
+           const info=AZ.info(root,'Gediş: 0'),bd=AZ.board(root,4),b=[];
+           c.forEach((v,i)=>{const e=h('button','cell','❓');
+            e.onclick=()=>{if(lock||open.includes(i)||e.classList.contains('ok'))return;
+             e.textContent=v;e.classList.add('sel');open.push(i);api.beep(500,.04);
+             if(open.length===2){moves++;info.textContent='Gediş: '+moves;const[x,y]=open;
+              if(c[x]===c[y]){b[x].classList.add('ok');b[y].classList.add('ok');open=[];if(++found===8)api.after(500,()=>api.over(Math.max(10,100-moves*4)))}
+              else{lock=true;api.after(700,()=>{[x,y].forEach(j=>{b[j].textContent='❓';b[j].classList.remove('sel')});open=[];lock=false})}}};
+            bd.append(e);b.push(e)})}});
+
+          // 4. Beşdaş (5 daş düz, kompüterə qarşı)
+          AZ.reg({id:'besdas',name:'Beşdaş',cat:'zeka',icon:'⚫',k:.4,start(root,api){
+           const N=9;let g=Array(N*N).fill(0),end=false,lk=false;const info=AZ.info(root,'Sən ⚫ · 5 daşı düz düz!'),bd=AZ.board(root,N),cs=[];
+           const D=[[1,0],[0,1],[1,1],[1,-1]];
+           const cnt=(i,p,d)=>{const r=i/N|0,c=i%N;let n=1,o=0;for(const s of[1,-1]){let y=r+d[1]*s,x=c+d[0]*s;while(y>=0&&y<N&&x>=0&&x<N&&g[y*N+x]===p){n++;y+=d[1]*s;x+=d[0]*s}if(y>=0&&y<N&&x>=0&&x<N&&g[y*N+x]===0)o++}return[n,o]};
+           const win=(i,p)=>D.some(d=>cnt(i,p,d)[0]>=5);
+           const val=(i,p)=>D.reduce((s,d)=>{const[n,o]=cnt(i,p,d);return s+(n>=5?1e5:n===4?[0,1e3,5e3][o]:n===3?[0,20,200][o]:n===2?[0,3,6][o]:0)},0);
+           const draw=()=>g.forEach((v,i)=>cs[i].textContent=v===1?'⚫':v===2?'⚪':'');
+           const ai=()=>{let best=-1,bi=-1;g.forEach((v,i)=>{if(v)return;const s=val(i,2)*1.1+val(i,1)+Math.random()*3;if(s>best){best=s;bi=i}});
+            if(bi<0){end=true;return api.over(20)}
+            g[bi]=2;draw();if(win(bi,2)){end=true;api.after(400,()=>api.over(0))}};
+           for(let i=0;i<N*N;i++){const b=h('button','cell go');
+            b.onclick=()=>{if(end||lk||g[i])return;lk=true;g[i]=1;draw();api.beep(500,.04);
+             if(win(i,1)){end=true;return api.after(300,()=>api.over(50))}
+             api.after(250,()=>{ai();lk=false})};
+            bd.append(b);cs.push(b)}}});
+
+          // 5. İşıqlar
+          AZ.reg({id:'isiqlar',name:'İşıqlar',cat:'zeka',icon:'💡',k:4,start(root,api){
+           const N=5;let g,lv=0,mv=0;const info=AZ.info(root,''),bd=AZ.board(root,N),cs=[];
+           const press=i=>{const r=i/N|0,c=i%N;[[0,0],[1,0],[-1,0],[0,1],[0,-1]].forEach(([a,b])=>{const y=r+a,x=c+b;if(y>=0&&y<N&&x>=0&&x<N)g[y*N+x]^=1})};
+           const draw=()=>{g.forEach((v,i)=>cs[i].classList.toggle('on',!!v));info.textContent=`Səviyyə ${lv+1}/5 · Gediş ${mv} · Hamısını söndür!`;api.score(lv)};
+           const nw=()=>{g=Array(25).fill(0);mv=0;for(let k=0;k<3+lv;k++)press(rnd(0,24));if(!g.some(v=>v))press(12);draw()};
+           for(let i=0;i<25;i++){const b=h('button','cell lamp');
+            b.onclick=()=>{press(i);mv++;draw();api.beep(300+mv*10,.04);if(!g.some(v=>v)){lv++;api.after(400,()=>lv>=5?api.over(lv):nw())}};
+            bd.append(b);cs.push(b)}
+           nw()}});
+
+          // 6. Slayd Puzzle
+          AZ.reg({id:'slayd',name:'Slayd Puzzle',cat:'zeka',icon:'🔢',k:.3,start(root,api){
+           const g=[1,2,3,4,5,6,7,8,0];let mv=0;const info=AZ.info(root,'Gediş: 0'),bd=AZ.board(root,3),cs=[];
+           const nb=z=>[z-1,z+1,z-3,z+3].filter(i=>i>=0&&i<9&&!(Math.abs(i-z)===1&&(i/3|0)!==(z/3|0)));
+           const draw=()=>g.forEach((v,i)=>{cs[i].textContent=v||'';cs[i].style.visibility=v?'visible':'hidden'});
+           for(let k=0;k<80;k++){const z=g.indexOf(0),n=pick(nb(z));[g[z],g[n]]=[g[n],g[z]]}
+           for(let i=0;i<9;i++){const b=h('button','cell num');
+            b.onclick=()=>{const z=g.indexOf(0);if(!nb(z).includes(i))return;[g[z],g[i]]=[g[i],g[z]];mv++;info.textContent='Gediş: '+mv;draw();api.beep(350,.03);
+             if(g.join()==='1,2,3,4,5,6,7,8,0')api.after(400,()=>api.over(Math.max(10,150-mv)))};
+            bd.append(b);cs.push(b)}
+           draw()}});
+
+          // 7. Viktorina
+          const Q=[
+          ['Azərbaycanın paytaxtı hansı şəhərdir?','Bakı','Gəncə','Sumqayıt','Şəki'],
+          ['Bakı hansı dənizin sahilindədir?','Xəzər','Qara','Aralıq','Azov'],
+          ['Azərbaycanın milli valyutası hansıdır?','Manat','Dollar','Lari','Tenge'],
+          ['Hansı musiqi aləti Azərbaycan musiqisinin simvollarındandır?','Tar','Gitara','Skripka','Pianino'],
+          ['Novruz bayramı hansı fəsildə qeyd olunur?','Yazda','Yayda','Payızda','Qışda'],
+          ['Qız Qalası harada yerləşir?','Bakı','Şəki','Lənkəran','Naxçıvan'],
+          ['"Xəmsə" əsərinin müəllifi kimdir?','Nizami Gəncəvi','Füzuli','Vaqif','Nəsimi'],
+          ['Şəki Xan Sarayı hansı şəhərdədir?','Şəki','Qəbələ','Quba','Gəncə'],
+          ['Hansı yemək Azərbaycan mətbəxinə aiddir?','Plov','Suşi','Paelya','Burrito'],
+          ['Azərbaycanın ən uca zirvəsi hansıdır?','Bazardüzü','Elbrus','Ararat','Fuji'],
+          ['Azərbaycan bayrağındakı rənglər hansılardır?','Mavi, qırmızı, yaşıl','Ağ, qırmızı, qara','Sarı, mavi, ağ','Yaşıl, ağ, qırmızı']];
+          AZ.reg({id:'viktorina',name:'Viktorina',cat:'zeka',icon:'❓',k:.3,start(root,api){
+           const qs=shuffle(Q).slice(0,10);let i=0,s=0,lock=false;const box=h('div','quiz');root.append(box);
+           const show=()=>{if(i>=qs.length)return api.over(s);const[q,...o]=qs[i];box.innerHTML='';box.append(h('div','q',`${i+1}/10 · ${q}`));
+            shuffle(o.map((t,j)=>[t,j===0])).forEach(([t,ok])=>{const b=h('button','opt',t);
+             b.onclick=()=>{if(lock)return;lock=true;b.classList.add(ok?'good':'bad');if(ok){s+=10;api.beep(700,.1)}else api.beep(200,.15);api.score(s);api.after(700,()=>{lock=false;i++;show()})};box.append(b)})};
+           show()}});
+
+          // 8. Sürətli Hesab
+          AZ.reg({id:'hesab',name:'Sürətli Hesab',cat:'zeka',icon:'➕',k:1.5,start(root,api){
+           let s=0,t=30;const info=AZ.info(root,''),box=h('div','quiz');root.append(box);
+           const tick=()=>info.textContent='⏱ '+t+' san · Düz: '+s;
+           const nq=()=>{const a=rnd(2,12),b=rnd(2,12),op=pick(['+','-','×']),r=op==='+'?a+b:op==='-'?a-b:a*b;const os=new Set([r]);while(os.size<4)os.add(r+rnd(-6,6));
+            box.innerHTML='';box.append(h('div','q big',`${a} ${op} ${b} = ?`));
+            shuffle([...os]).forEach(v=>{const bt=h('button','opt',v);bt.onclick=()=>{if(v===r){s++;api.beep(700,.05)}else{t=Math.max(0,t-3);api.beep(200,.1)}api.score(s);tick();nq()};box.append(bt)})};
+           nq();tick();api.every(1000,()=>{t--;tick();if(t<=0)api.over(s)})}});
+          })();
+          AZEOF
+          mkdir -p www/games
+          cat > www/games/arkada.js <<'AZEOF'
+          (()=>{
+          const{h,rnd,pick,shuffle}=AZ;
+          const emo=(x,e,px,py,s)=>{x.font=s+'px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(e,px,py)};
+
+          // 1. İlan
+          AZ.reg({id:'ilan',name:'İlan',cat:'arkada',icon:'🐍',k:.8,start(root,api){
+           const C=api.cv(300,400),x=C.x,S=20,W=15,H=20;let sn=[[7,10],[6,10],[5,10]],d=[1,0],nd=d,f=[10,5],sc=0;
+           const spawn=()=>{do f=[rnd(0,W-1),rnd(0,H-1)];while(sn.some(p=>p[0]===f[0]&&p[1]===f[1]))};
+           const draw=()=>{x.fillStyle='#0d2a1a';x.fillRect(0,0,300,400);sn.forEach((p,i)=>{x.fillStyle=i?'#3ddc84':'#b6ff6a';x.fillRect(p[0]*S+1,p[1]*S+1,S-2,S-2)});emo(x,'🍎',f[0]*S+10,f[1]*S+11,18)};
+           api.swipe(root,k=>{const m={l:[-1,0],r:[1,0],u:[0,-1],d:[0,1]}[k];if(m[0]+d[0]||m[1]+d[1])nd=m});
+           api.every(130,()=>{d=nd;const hd=[sn[0][0]+d[0],sn[0][1]+d[1]];
+            if(hd[0]<0||hd[1]<0||hd[0]>=W||hd[1]>=H||sn.some(p=>p[0]===hd[0]&&p[1]===hd[1]))return api.over(sc);
+            sn.unshift(hd);if(hd[0]===f[0]&&hd[1]===f[1]){sc++;api.score(sc);api.beep(700,.05);spawn()}else sn.pop();draw()});
+           draw()}});
+
+          // Qaçan oyunu fabriki (Qaçışçı və Qarabağ Atı üçün)
+          AZ.runner=o=>({...o,start(root,api){
+           const C=api.cv(360,480),x=C.x,G=380;let y=G,vy=0,ob=[],t=0,sc=0;
+           root.addEventListener('pointerdown',()=>{if(y>=G){vy=-(o.jump||620);api.beep(500,.04)}});
+           api.raf(dt=>{t+=dt;sc=Math.floor(t*10);const sp=Math.min(430,220+t*6);
+            vy+=1500*dt;y=Math.min(G,y+vy*dt);if(y>=G)vy=0;
+            if(Math.random()<dt*(1+t/50)&&(!ob.length||ob[ob.length-1].x<250))ob.push({x:390,w:rnd(26,40),h:rnd(34,60)});
+            ob.forEach(b=>b.x-=sp*dt);ob=ob.filter(b=>b.x>-60);
+            x.fillStyle=o.sky;x.fillRect(0,0,360,480);x.fillStyle=o.ground;x.fillRect(0,G+10,360,110);
+            x.textAlign='center';x.textBaseline='alphabetic';
+            ob.forEach(b=>{x.font=b.h+'px serif';x.fillText(o.obs,b.x+b.w/2,G+10)});
+            x.font='42px serif';x.fillText(o.hero,80,y+10);
+            const hit=ob.some(b=>{const rt=G+10-b.h*.8;return 66<b.x+b.w-4&&94>b.x+4&&y-22<G+10&&y+8>rt});
+            if(hit)return api.over(sc);api.score(sc)})}});
+          AZ.reg(AZ.runner({id:'qacisci',name:'Qaçışçı',cat:'arkada',icon:'🏃',k:.05,hero:'🏃',obs:'🌵',sky:'#2a6fdb',ground:'#d9a84a'}));
+
+          // 3. Kərpic Qırıcı
+          AZ.reg({id:'qirici',name:'Kərpic Qırıcı',cat:'arkada',icon:'🧱',k:.4,start(root,api){
+           const C=api.cv(360,480),x=C.x;let px=180,b={x:180,y:440,vx:150,vy:-250},br=[],sc=0,lv=3,run=false;
+           for(let r=0;r<5;r++)for(let c=0;c<7;c++)br.push({x:c*50+5,y:r*22+50,a:1,col:`hsl(${r*50+20},80%,55%)`});
+           const mv=e=>{px=Math.max(40,Math.min(320,C.pos(e)[0]))};
+           C.c.addEventListener('pointermove',mv);C.c.addEventListener('pointerdown',e=>{mv(e);run=true});
+           api.raf(dt=>{
+            if(run){b.x+=b.vx*dt;b.y+=b.vy*dt}else{b.x=px;b.y=440;b.vx=150;b.vy=-250}
+            if(b.x<6||b.x>354){b.vx*=-1;b.x=Math.min(354,Math.max(6,b.x))}
+            if(b.y<6){b.vy=Math.abs(b.vy);b.y=6}
+            if(b.vy>0&&b.y>446&&b.y<462&&Math.abs(b.x-px)<46){b.vy=-Math.abs(b.vy);b.vx=(b.x-px)*6;api.beep(400,.03)}
+            let hit=0;br.forEach(k=>{if(k.a&&b.x>k.x&&b.x<k.x+46&&b.y>k.y&&b.y<k.y+18){k.a=0;hit=1;sc++;api.score(sc);api.beep(800,.03)}});
+            if(hit){b.vy*=-1.01}
+            if(b.y>490){lv--;run=false;if(lv<=0)return api.over(sc)}
+            if(!br.some(k=>k.a))return api.over(sc+20);
+            x.fillStyle='#101a3a';x.fillRect(0,0,360,480);
+            br.forEach(k=>{if(k.a){x.fillStyle=k.col;x.fillRect(k.x,k.y,46,18)}});
+            x.fillStyle='#ffc928';x.fillRect(px-40,452,80,10);
+            x.fillStyle='#fff';x.beginPath();x.arc(b.x,b.y,6,0,7);x.fill();
+            x.font='14px sans-serif';x.textAlign='left';x.textBaseline='top';x.fillText('❤️ '+lv+(run?'':'  · toxun və at'),10,10)})}});
+
+          // 4. Uçan Quş
+          AZ.reg({id:'flappy',name:'Uçan Quş',cat:'arkada',icon:'🐦',k:.5,start(root,api){
+           const C=api.cv(360,480),x=C.x;let y=240,vy=0,pp=[{x:400,g:rnd(120,340)}],sc=0;
+           root.addEventListener('pointerdown',()=>{vy=-300;api.beep(600,.03)});
+           api.raf(dt=>{vy+=900*dt;y+=vy*dt;pp.forEach(p=>p.x-=130*dt);
+            if(pp[pp.length-1].x<190)pp.push({x:380,g:rnd(120,340)});
+            pp=pp.filter(p=>p.x>-60);
+            pp.forEach(p=>{if(!p.s&&p.x+40<80){p.s=1;sc++;api.score(sc);api.beep(800,.04)}});
+            x.fillStyle='#4ec3ff';x.fillRect(0,0,360,480);x.fillStyle='#3cb043';
+            pp.forEach(p=>{x.fillRect(p.x,0,40,p.g-60);x.fillRect(p.x,p.g+60,40,480-p.g-60)});
+            emo(x,'🐦',80,y,30);
+            const hit=pp.some(p=>92>p.x&&68<p.x+40&&(y-12<p.g-60||y+12>p.g+60));
+            if(hit||y>480||y<-20)api.over(sc)})}});
+
+          // 5. Balon Partlat
+          AZ.reg({id:'balon',name:'Balon Partlat',cat:'arkada',icon:'🎈',k:.6,start(root,api){
+           const C=api.cv(360,480),x=C.x;let bs=[],sc=0,lv=5,t=0;
+           C.c.addEventListener('pointerdown',e=>{const[px,py]=C.pos(e);const i=bs.findIndex(b=>Math.hypot(b.x-px,b.y-py)<b.r+10);if(i>=0){bs.splice(i,1);sc++;api.score(sc);api.beep(500+rnd(0,300),.05)}});
+           api.raf(dt=>{t+=dt;
+            if(Math.random()<dt*(1.2+t/30))bs.push({x:rnd(30,330),y:500,r:rnd(22,34),v:rnd(60,110)+t*2,c:rnd(0,360)});
+            bs.forEach(b=>b.y-=b.v*dt);
+            const esc=bs.filter(b=>b.y<-40).length;if(esc){lv-=esc;bs=bs.filter(b=>b.y>=-40);api.beep(150,.15)}
+            if(lv<=0)return api.over(sc);
+            x.fillStyle='#8fd3ff';x.fillRect(0,0,360,480);
+            bs.forEach(b=>{x.fillStyle=`hsl(${b.c},80%,58%)`;x.beginPath();x.ellipse(b.x,b.y,b.r*.8,b.r,0,0,7);x.fill();x.strokeStyle='#fff';x.beginPath();x.moveTo(b.x,b.y+b.r);x.lineTo(b.x,b.y+b.r+18);x.stroke()});
+            x.font='16px sans-serif';x.textAlign='left';x.textBaseline='top';x.fillStyle='#123';x.fillText('❤️ '+lv,10,10)})}});
+
+          // 6. Kosmik Atəş
+          AZ.reg({id:'kosmik',name:'Kosmik Atəş',cat:'arkada',icon:'🚀',k:.6,start(root,api){
+           const C=api.cv(360,480),x=C.x;let sx=180,bl=[],en=[],sc=0,lv=3,t=0,ft=0;
+           const mv=e=>{sx=Math.max(20,Math.min(340,C.pos(e)[0]))};C.c.addEventListener('pointermove',mv);C.c.addEventListener('pointerdown',mv);
+           api.raf(dt=>{t+=dt;ft-=dt;if(ft<=0){ft=.25;bl.push({x:sx,y:430})}
+            if(Math.random()<dt*(1+t/25))en.push({x:rnd(20,340),y:-20,v:rnd(70,130)+t*2});
+            bl.forEach(b=>b.y-=420*dt);en.forEach(e=>e.y+=e.v*dt);
+            bl.forEach(b=>en.forEach(e=>{if(!b.d&&!e.d&&Math.abs(b.x-e.x)<18&&Math.abs(b.y-e.y)<18){b.d=e.d=1;sc++;api.score(sc);api.beep(300,.04)}}));
+            en.forEach(e=>{if(!e.d&&e.y>470){e.d=1;lv--}if(!e.d&&Math.abs(e.x-sx)<22&&Math.abs(e.y-445)<22){e.d=1;lv--;api.beep(150,.2)}});
+            bl=bl.filter(b=>!b.d&&b.y>-10);en=en.filter(e=>!e.d);
+            if(lv<=0)return api.over(sc);
+            x.fillStyle='#050818';x.fillRect(0,0,360,480);
+            x.fillStyle='#ffd54a';bl.forEach(b=>x.fillRect(b.x-2,b.y-8,4,12));
+            en.forEach(e=>emo(x,'👾',e.x,e.y,28));emo(x,'🚀',sx,448,34);
+            x.font='16px sans-serif';x.textAlign='left';x.textBaseline='top';x.fillStyle='#fff';x.fillText('❤️ '+lv,10,10)})}});
+          })();
+          AZEOF
+          mkdir -p www/games
+          cat > www/games/idman.js <<'AZEOF'
+          (()=>{
+          const{h,rnd,pick,shuffle}=AZ;
+          const emo=(x,e,px,py,s)=>{x.font=s+'px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(e,px,py)};
+          const txt=(x,t,px,py,c='#fff',a='left')=>{x.font='bold 15px sans-serif';x.fillStyle=c;x.textAlign=a;x.textBaseline='top';x.fillText(t,px,py)};
+
+          // 1. Bilyard (sürüşdürüb at)
+          AZ.reg({id:'bilyard',name:'Bilyard',cat:'idman',icon:'🎱',k:.5,start(root,api){
+           const C=api.cv(360,540),x=C.x,R=11,P=[[10,10],[350,10],[10,530],[350,530],[10,270],[350,270]];
+           let sc=0,shots=10,aim=null,mov=false,n=0;
+           const cue={x:180,y:430,vx:0,vy:0,c:'#fff',q:1},balls=[cue];
+           for(let r=0;r<3;r++)for(let c=0;c<=r;c++)balls.push({x:180+(c-r/2)*25,y:150+r*22,vx:0,vy:0,c:`hsl(${n++*70},85%,55%)`});
+           C.c.addEventListener('pointerdown',e=>{if(mov)return;const p=C.pos(e);if(Math.hypot(p[0]-cue.x,p[1]-cue.y)<50){aim=p;try{C.c.setPointerCapture(e.pointerId)}catch(_){}}});
+           C.c.addEventListener('pointermove',e=>{if(aim)aim=C.pos(e)});
+           const rel=()=>{if(!aim)return;const dx=cue.x-aim[0],dy=cue.y-aim[1],L=Math.hypot(dx,dy),d=Math.min(130,L);aim=null;if(L<10)return;cue.vx=dx/L*d*7;cue.vy=dy/L*d*7;shots--;mov=true;api.beep(250,.06)};
+           C.c.addEventListener('pointerup',rel);C.c.addEventListener('pointercancel',rel);
+           const step=hh=>{
+            balls.forEach(b=>{b.x+=b.vx*hh;b.y+=b.vy*hh;const s=Math.hypot(b.vx,b.vy);if(s>0){const ns=Math.max(0,s*(1-1.6*hh)-30*hh);b.vx*=ns/s;b.vy*=ns/s}
+             if(b.x<R+6){b.x=R+6;b.vx=Math.abs(b.vx)}if(b.x>354-R){b.x=354-R;b.vx=-Math.abs(b.vx)}
+             if(b.y<R+6){b.y=R+6;b.vy=Math.abs(b.vy)}if(b.y>534-R){b.y=534-R;b.vy=-Math.abs(b.vy)}});
+            for(let i=0;i<balls.length;i++)for(let j=i+1;j<balls.length;j++){const a=balls[i],b=balls[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+             if(d<2*R&&d>.01){const nx=dx/d,ny=dy/d,p=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
+              if(p>0){a.vx-=p*nx;a.vy-=p*ny;b.vx+=p*nx;b.vy+=p*ny;if(p>60)api.beep(200+Math.min(300,p),.02)}
+              const o=(2*R-d)/2;a.x-=nx*o;a.y-=ny*o;b.x+=nx*o;b.y+=ny*o}}
+            for(let i=balls.length-1;i>=0;i--){const b=balls[i];
+             if(P.some(p=>Math.hypot(b.x-p[0],b.y-p[1])<18)){if(b.q){b.x=180;b.y=430;b.vx=b.vy=0}else{balls.splice(i,1);sc+=10;api.score(sc);api.beep(900,.1)}}}};
+           api.raf(dt=>{for(let s=0;s<4;s++)step(dt/4);
+            if(mov&&balls.every(b=>Math.hypot(b.vx,b.vy)<6)){mov=false;balls.forEach(b=>b.vx=b.vy=0);
+             if(balls.length===1)return api.over(sc+30);if(shots<=0)return api.over(sc)}
+            x.fillStyle='#5a3a1a';x.fillRect(0,0,360,540);x.fillStyle='#0d6b3a';x.fillRect(6,6,348,528);
+            x.fillStyle='#000';P.forEach(p=>{x.beginPath();x.arc(p[0],p[1],18,0,7);x.fill()});
+            balls.forEach(b=>{x.fillStyle=b.c;x.beginPath();x.arc(b.x,b.y,R,0,7);x.fill();x.fillStyle='rgba(255,255,255,.5)';x.beginPath();x.arc(b.x-3,b.y-3,3,0,7);x.fill()});
+            if(aim){const dx=cue.x-aim[0],dy=cue.y-aim[1];x.strokeStyle='rgba(255,255,255,.8)';x.setLineDash([6,6]);x.beginPath();x.moveTo(cue.x,cue.y);x.lineTo(cue.x+dx*2,cue.y+dy*2);x.stroke();x.setLineDash([])}
+            txt(x,'Zərbə: '+shots+(mov?'':' · ağ topu geri çək və burax'),16,16)})}});
+
+          // 2. Futbol Zərbəsi
+          AZ.reg({id:'futbol',name:'Futbol Zərbəsi',cat:'idman',icon:'⚽',k:.3,start(root,api){
+           const C=api.cv(360,480),x=C.x;let g=0,n=0,sh=null,kx=180;const M0='Qapıya toxun və vur!';let msg=M0;
+           C.c.addEventListener('pointerdown',e=>{if(sh)return;const[px,py]=C.pos(e);if(py>300)return;sh={t:0,tx:px,ty:py,kx:pick([110,180,250]),f:0};api.beep(300,.05)});
+           api.raf(dt=>{
+            if(sh){sh.t=Math.min(1,sh.t+dt/.55);kx=180+(sh.kx-180)*Math.min(1,sh.t*1.6);
+             if(sh.t>=1&&!sh.f){sh.f=1;n++;const inG=sh.tx>40&&sh.tx<320&&sh.ty>60&&sh.ty<170;
+              if(inG&&Math.abs(sh.tx-sh.kx)>=45){g++;msg='QOOL! ⚽';api.beep(800,.2)}else msg=!inG?'Qapıdan kənar!':'Qapıçı tutdu! 🧤';
+              api.score(g*20);api.after(1000,()=>{sh=null;kx=180;msg=M0;if(n>=5)api.over(g*20)})}}
+            x.fillStyle='#2e8b3d';x.fillRect(0,0,360,480);x.fillStyle='#37a049';for(let i=0;i<6;i++)x.fillRect(0,i*80,360,40);
+            x.fillStyle='rgba(255,255,255,.18)';x.fillRect(40,60,280,110);
+            x.strokeStyle='#fff';x.lineWidth=5;x.strokeRect(40,60,280,110);x.lineWidth=1;
+            emo(x,'🧤',kx,140,46);
+            const t=sh?sh.t:0,bx=sh?180+(sh.tx-180)*t:180,by=sh?420+(sh.ty-420)*t:420;emo(x,'⚽',bx,by,36-t*14);
+            txt(x,msg,180,300,'#fff','center');txt(x,`Zərbə ${Math.min(n+(sh&&!sh.f?1:0),5)}/5 · Qol: ${g}`,16,16);
+            txt(x,'Küncə vur: qapıçı ortanı tutur!',180,440,'#e6ffe9','center')})}});
+
+          // 3. Basketbol
+          AZ.reg({id:'basket',name:'Basketbol',cat:'idman',icon:'🏀',k:.6,start(root,api){
+           const C=api.cv(360,480),x=C.x;let t=0,shots=10,sc=0,ball=null;
+           root.addEventListener('pointerdown',()=>{if(ball||shots<=0)return;const m=(Math.sin(t*3.2)+1)/2,d=Math.abs(m-.5);
+            const ok=d<.09||(d<.2&&Math.random()<.35);ball={u:0,tx:ok?180:(m>.5?255:105),ok,f:0};shots--;api.beep(400,.05)});
+           api.raf(dt=>{t+=dt;
+            if(ball){ball.u=Math.min(1,ball.u+dt/.7);
+             if(ball.u>=1&&!ball.f){ball.f=1;if(ball.ok){sc++;api.score(sc);api.beep(900,.15)}else api.beep(150,.15);api.after(500,()=>{ball=null;if(shots<=0)api.over(sc*10)})}}
+            x.fillStyle='#1b2a5c';x.fillRect(0,0,360,480);x.fillStyle='#d9a066';x.fillRect(0,440,360,40);
+            x.fillStyle='#fff';x.fillRect(120,40,120,80);x.strokeStyle='#e33';x.lineWidth=4;x.strokeRect(150,80,60,36);x.lineWidth=6;x.beginPath();x.moveTo(150,110);x.lineTo(210,110);x.stroke();x.lineWidth=1;
+            const u=ball?ball.u:0,bx=ball?180+(ball.tx-180)*u:180,by=ball?420+(100-420)*u-160*Math.sin(Math.PI*u):420;emo(x,'🏀',bx,by,40-u*10);
+            const m=(Math.sin(t*3.2)+1)/2;x.fillStyle='#0b1230';x.fillRect(30,455,300,16);x.fillStyle='#2fae5c';x.fillRect(180-.09*300,455,.18*300,16);x.fillStyle='#ffd54a';x.fillRect(30+m*300-3,451,6,24);
+            txt(x,`Atış: ${shots} qalıb · Xal: ${sc}`,16,16);txt(x,'Yaşıl zonada toxun!',180,420,'#fff','center')})}});
+
+          // 4. Pinq-Pong
+          AZ.reg({id:'pinq',name:'Pinq-Pong',cat:'idman',icon:'🏓',k:.3,start(root,api){
+           const C=api.cv(360,480),x=C.x;let px=180,ax=180,ps=0,as=0,b;
+           const rs=d=>b={x:180,y:240,vx:rnd(-120,120),vy:d*210};rs(1);
+           const mv=e=>{px=Math.max(40,Math.min(320,C.pos(e)[0]))};C.c.addEventListener('pointermove',mv);C.c.addEventListener('pointerdown',mv);
+           api.raf(dt=>{b.x+=b.vx*dt;b.y+=b.vy*dt;if(b.x<8||b.x>352){b.vx*=-1;b.x=Math.max(8,Math.min(352,b.x))}
+            ax+=Math.max(-175*dt,Math.min(175*dt,b.x-ax));
+            if(b.vy>0&&b.y>440&&b.y<458&&Math.abs(b.x-px)<46){b.vy=-Math.min(520,b.vy*1.06);b.vx=(b.x-px)*5;api.beep(400,.03)}
+            if(b.vy<0&&b.y<40&&b.y>22&&Math.abs(b.x-ax)<46){b.vy=Math.min(520,-b.vy*1.06);b.vx=(b.x-ax)*5;api.beep(300,.03)}
+            if(b.y>490){as++;rs(-1)}if(b.y<-10){ps++;rs(1);api.beep(800,.1)}
+            api.score(ps+' : '+as);
+            if(ps>=5||as>=5)return api.over(ps*10+(ps>as?30:0));
+            x.fillStyle='#0b3d2e';x.fillRect(0,0,360,480);x.fillStyle='rgba(255,255,255,.3)';for(let i=0;i<12;i++)x.fillRect(i*30+8,238,16,4);
+            x.fillStyle='#ffc928';x.fillRect(px-40,452,80,10);x.fillStyle='#4cc3ff';x.fillRect(ax-40,28,80,10);
+            x.fillStyle='#fff';x.beginPath();x.arc(b.x,b.y,7,0,7);x.fill();
+            txt(x,'Sən '+ps,10,240+10);txt(x,'Rəqib '+as,10,240-26)})}});
+
+          // 5. Oxatma
+          AZ.reg({id:'oxatma',name:'Oxatma',cat:'idman',icon:'🏹',k:.5,start(root,api){
+           const C=api.cv(360,480),x=C.x;let t=0,n=0,sc=0,ar=null,st=[],msg='Hədəf düz ortada olanda toxun!';const L=8;
+           root.addEventListener('pointerdown',()=>{if(ar||n>=L)return;n++;ar={y:440};api.beep(300,.04)});
+           const tx=()=>180+130*Math.sin(t*(1.4+n*.18));
+           api.raf(dt=>{t+=dt;
+            if(ar){ar.y-=900*dt;if(ar.y<=125){const hx=tx(),d=Math.abs(hx-180);const p=d<8?10:d<20?8:d<35?6:d<50?4:d<62?2:0;
+              sc+=p;api.score(sc);msg=p?`+${p} xal!`:'Qaçırdın!';api.beep(p?700:150,.1);if(p)st.push(180-hx);ar=null;if(n>=L)api.after(700,()=>api.over(sc))}}
+            x.fillStyle='#8fd3ff';x.fillRect(0,0,360,480);x.fillStyle='#4f9a3d';x.fillRect(0,380,360,100);
+            const hx=tx();[[62,'#fff'],[50,'#222'],[35,'#2a6fdb'],[20,'#e33'],[8,'#ffd54a']].forEach(([r,c])=>{x.fillStyle=c;x.beginPath();x.arc(hx,120,r,0,7);x.fill()});
+            x.strokeStyle='#5a3a1a';x.lineWidth=3;st.forEach(o=>{x.beginPath();x.moveTo(hx+o,120);x.lineTo(hx+o,100);x.stroke()});
+            if(ar){x.strokeStyle='#5a3a1a';x.lineWidth=3;x.beginPath();x.moveTo(180,ar.y);x.lineTo(180,ar.y+30);x.stroke()}
+            emo(x,'🏹',180,450,40);x.lineWidth=1;
+            txt(x,`Ox: ${Math.max(0,L-n)} · Xal: ${sc}`,16,16);txt(x,msg,180,330,'#123','center')})}});
+          })();
+          AZEOF
+          mkdir -p www/games
+          cat > www/games/macera.js <<'AZEOF'
+          (()=>{
+          const{h,rnd,pick,shuffle}=AZ;
+
+          // Yan-yana qaçış fabriki (Bakı Yarışı, Şahdağ)
+          AZ.dodger=o=>({...o,start(root,api){
+           const C=api.cv(360,480),x=C.x;let px=180,ob=[],t=0,sc=0,off=0;
+           const mv=e=>{px=Math.max(24,Math.min(336,C.pos(e)[0]))};C.c.addEventListener('pointermove',mv);C.c.addEventListener('pointerdown',mv);
+           const hy=o.up?110:400,dir=o.up?-1:1;
+           api.raf(dt=>{t+=dt;const sp=Math.min(460,(o.up?170:200)+t*5);sc+=dt*sp/20;off+=sp*dt;
+            if(Math.random()<dt*(1.4+t/40))ob.push({x:rnd(24,336),y:o.up?520:-40,e:pick(o.obs),s:36,star:0});
+            if(Math.random()<dt*.5)ob.push({x:rnd(24,336),y:o.up?520:-40,e:'⭐',s:30,star:1});
+            ob.forEach(b=>b.y+=dir*sp*dt);ob=ob.filter(b=>b.y>-60&&b.y<540&&!b.d);
+            o.bg(x,off);x.textAlign='center';x.textBaseline='middle';
+            ob.forEach(b=>{x.font=b.s+'px serif';x.fillText(b.e,b.x,b.y)});
+            x.font='38px serif';x.fillText(o.hero,px,hy);
+            for(const b of ob){if(Math.abs(b.x-px)<24&&Math.abs(b.y-hy)<28){if(b.star){b.d=1;sc+=5;api.beep(900,.05)}else return api.over(Math.floor(sc))}}
+            api.score(Math.floor(sc))})}});
+
+          AZ.reg(AZ.dodger({id:'baki',name:'Bakı Yarışı',cat:'macera',icon:'🏎️',k:.3,hero:'🏎️',obs:['🚕','🚙','🚌','🚓'],
+           bg:(x,off)=>{const o=off%60;x.fillStyle='#2b2f3a';x.fillRect(0,0,360,480);x.fillStyle='#fff';for(let i=-1;i<9;i++){x.fillRect(118,i*60+o,6,30);x.fillRect(238,i*60+o,6,30)}x.fillStyle='#e0b020';x.fillRect(6,0,4,480);x.fillRect(350,0,4,480)}}));
+
+          AZ.reg(AZ.dodger({id:'sahdag',name:'Şahdağ Macərası',cat:'macera',icon:'⛷️',k:.3,up:true,hero:'⛷️',obs:['🌲','🌲','⛄'],
+           bg:(x,off)=>{x.fillStyle='#eaf6ff';x.fillRect(0,0,360,480);x.fillStyle='#cfe6f7';for(let i=0;i<8;i++){const yy=(((i*70-off)%560)+560)%560-40;x.fillRect(30+(i*83)%300,yy,50,5)}}}));
+
+          AZ.reg(AZ.runner({id:'at',name:'Qarabağ Atı',cat:'macera',icon:'🐎',k:.05,jump:700,hero:'🐎',obs:'🧱',sky:'#ffb66b',ground:'#5a8f3a'}));
+
+          // Xəzinə Axtarışı (tələ axtarışı)
+          AZ.reg({id:'xezine',name:'Xəzinə Axtarışı',cat:'macera',icon:'🗺️',k:.4,start(root,api){
+           const N=7,M=7;const mine=Array(N*N).fill(0),op=Array(N*N).fill(0);let first=true,rev=0;
+           const info=AZ.info(root,'Tələlərdən qaç! 🕳️ × '+M),bd=AZ.board(root,N),cs=[];
+           const nb=i=>{const r=i/N|0,c=i%N,a=[];for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){if(!y&&!z)continue;const rr=r+y,cc=c+z;if(rr>=0&&rr<N&&cc>=0&&cc<N)a.push(rr*N+cc)}return a};
+           const num=i=>nb(i).filter(j=>mine[j]).length;
+           const open=i=>{if(op[i])return;op[i]=1;rev++;const n=num(i);cs[i].textContent=n||'';cs[i].classList.add('ok');if(!n)nb(i).forEach(j=>{if(!mine[j])open(j)})};
+           for(let i=0;i<N*N;i++){const b=h('button','cell');
+            b.onclick=()=>{if(op[i])return;
+             if(first){first=false;let k=0;while(k<M){const j=rnd(0,N*N-1);if(j!==i&&!nb(i).includes(j)&&!mine[j]){mine[j]=1;k++}}}
+             if(mine[i]){mine.forEach((m,j)=>{if(m)cs[j].textContent='🕳️'});api.beep(150,.3);return api.after(900,()=>api.over(rev))}
+             open(i);api.beep(500,.03);api.score(rev);if(rev===N*N-M)api.after(400,()=>api.over(rev+40))};
+            bd.append(b);cs.push(b)}}});
+
+          // Labirint
+          AZ.reg({id:'labirint',name:'Labirint',cat:'macera',icon:'🧭',k:.5,start(root,api){
+           const W=9,H=11,S=40,C=api.cv(360,440),x=C.x;let m,p,sc=0,t=60;const info=AZ.info(root,'');
+           const gen=()=>{m=Array.from({length:H},()=>Array(W).fill(1));const st=[[1,1]];m[1][1]=0;
+            while(st.length){const[cx,cy]=st[st.length-1];
+             const d=shuffle([[2,0],[-2,0],[0,2],[0,-2]]).find(([a,b])=>{const nx=cx+a,ny=cy+b;return nx>0&&ny>0&&nx<W-1&&ny<H-1&&m[ny][nx]});
+             if(!d)st.pop();else{m[cy+d[1]/2][cx+d[0]/2]=0;m[cy+d[1]][cx+d[0]]=0;st.push([cx+d[0],cy+d[1]])}}
+            p=[1,1]};
+           const draw=()=>{x.fillStyle='#14213d';x.fillRect(0,0,360,440);m.forEach((r,y)=>r.forEach((v,xx)=>{if(v){x.fillStyle='#3b5b9c';x.fillRect(xx*S,y*S,S,S)}}));
+            x.font='28px serif';x.textAlign='center';x.textBaseline='middle';x.fillText('🏁',(W-2)*S+20,(H-2)*S+22);x.fillText('🚶',p[0]*S+20,p[1]*S+22)};
+           const tick=()=>info.textContent=`⏱ ${t} san · Çıxış: ${sc} · Sürüşdür!`;
+           api.swipe(root,k=>{const[dx,dy]={l:[-1,0],r:[1,0],u:[0,-1],d:[0,1]}[k];
+            while(m[p[1]+dy][p[0]+dx]===0){p[0]+=dx;p[1]+=dy;if(m[p[1]+dy][p[0]+dx]!==0)break;if(m[p[1]+dx][p[0]+dy]===0||m[p[1]-dx][p[0]-dy]===0)break}
+            api.beep(400,.03);
+            if(p[0]===W-2&&p[1]===H-2){sc++;api.score(sc);api.beep(900,.1);gen()}
+            draw();tick()});
+           gen();draw();tick();api.every(1000,()=>{t--;tick();if(t<=0)api.over(sc*10)})}});
+          })();
+          AZEOF
+          mkdir -p www/games
+          cat > www/games/strat.js <<'AZEOF'
+          (()=>{
+          const{h,rnd,pick,shuffle}=AZ;
+
+          // 1. Dörd Sıra
+          AZ.reg({id:'dort',name:'Dörd Sıra',cat:'strat',icon:'🔴',k:.4,start(root,api){
+           const C=7,R=6;const g=Array(C*R).fill(0);let end=false,lk=false;
+           const info=AZ.info(root,'Sən 🔴 · sütuna toxun'),bd=AZ.board(root,C,R),cs=[];
+           const drop=(c,p)=>{for(let r=R-1;r>=0;r--)if(!g[r*C+c]){g[r*C+c]=p;return r*C+c}return -1};
+           const un=i=>{g[i]=0};
+           const win=p=>{for(let r=0;r<R;r++)for(let c=0;c<C;c++)for(const[dx,dy]of[[1,0],[0,1],[1,1],[1,-1]]){let k=0;for(;k<4;k++){const y=r+dy*k,x=c+dx*k;if(y<0||y>=R||x<0||x>=C||g[y*C+x]!==p)break}if(k===4)return true}return false};
+           const draw=()=>g.forEach((v,i)=>cs[i].textContent=v===1?'🔴':v===2?'🟡':'');
+           const aiMove=()=>{const ok=[...Array(C).keys()].filter(c=>!g[c]);
+            for(const p of[2,1])for(const c of ok){const i=drop(c,p),w=win(p);un(i);if(w)return c}
+            const safe=ok.filter(c=>{const i=drop(c,2);let bad=false;if(i-C>=0){const j=drop(c,1);bad=win(1);un(j)}un(i);return!bad});
+            const pool=safe.length?safe:ok;return pool.slice().sort((a,b)=>Math.abs(a-3)-Math.abs(b-3)+Math.random()*2-1)[0]};
+           for(let i=0;i<C*R;i++){const b=h('button','cell c4');
+            b.onclick=()=>{if(end||lk)return;const c=i%C;if(drop(c,1)<0)return;draw();api.beep(500,.04);
+             if(win(1)){end=true;return api.after(500,()=>api.over(60))}
+             if(!g.includes(0)){end=true;return api.over(20)}
+             lk=true;api.after(350,()=>{drop(aiMove(),2);draw();lk=false;
+              if(win(2)){end=true;api.after(400,()=>api.over(0))}else if(!g.includes(0)){end=true;api.over(20)}})};
+            bd.append(b);cs.push(b)}}});
+
+          // 2. Qala Fəthi (Reversi)
+          AZ.reg({id:'qala',name:'Qala Fəthi',cat:'strat',icon:'🏰',k:.5,start(root,api){
+           const N=6,D=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];const g=Array(36).fill(0);let lk=false;g[14]=g[21]=2;g[15]=g[20]=1;
+           const info=AZ.info(root,''),bd=AZ.board(root,N),cs=[];
+           const fl=(i,p)=>{if(g[i])return[];const r=i/N|0,c=i%N,o=[];
+            for(const[dx,dy]of D){let y=r+dy,x=c+dx;const t=[];while(y>=0&&y<N&&x>=0&&x<N&&g[y*N+x]===3-p){t.push(y*N+x);y+=dy;x+=dx}
+             if(t.length&&y>=0&&y<N&&x>=0&&x<N&&g[y*N+x]===p)o.push(...t)}return o};
+           const moves=p=>g.map((v,i)=>i).filter(i=>fl(i,p).length);
+           const put=(i,p)=>{const f=fl(i,p);f.forEach(j=>g[j]=p);g[i]=p};
+           const cnt=p=>g.filter(v=>v===p).length;
+           const cor=i=>[0,5,30,35].includes(i);
+           const draw=()=>{const m=lk?[]:moves(1);g.forEach((v,i)=>{cs[i].textContent=v===1?'⚫':v===2?'⚪':m.includes(i)?'·':''});info.textContent=`⚫ Sən ${cnt(1)} — ⚪ Rəqib ${cnt(2)}`;api.score(cnt(1))};
+           const fin=()=>{const a=cnt(1),b=cnt(2);api.after(500,()=>api.over(a>b?a+30:a))};
+           const turn=p=>{
+            if(!moves(1).length&&!moves(2).length){lk=true;draw();return fin()}
+            if(!moves(p).length)return turn(3-p);
+            if(p===1){lk=false;draw();return}
+            lk=true;draw();
+            api.after(500,()=>{const m=moves(2).sort((a,b)=>fl(b,2).length+(cor(b)?5:0)-fl(a,2).length-(cor(a)?5:0))[0];put(m,2);api.beep(300,.04);turn(1)})};
+           for(let i=0;i<36;i++){const b=h('button','cell rv');
+            b.onclick=()=>{if(lk||!fl(i,1).length)return;put(i,1);api.beep(500,.04);draw();turn(2)};
+            bd.append(b);cs.push(b)}
+           draw()}});
+
+          // 3. Üç Daş (3 raund)
+          AZ.reg({id:'ucdas',name:'Üç Daş',cat:'strat',icon:'❌',k:.5,start(root,api){
+           const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];let b,rd=0,tot=0,lk=false;
+           const info=AZ.info(root,''),bd=AZ.board(root,3),cs=[];
+           const w=b=>{for(const[a,c,d]of L)if(b[a]&&b[a]===b[c]&&b[a]===b[d])return b[a];return b.includes(0)?0:3};
+           const mm=(b,p)=>{const r=w(b);if(r)return r===2?1:r===1?-1:0;let best=p===2?-2:2;
+            for(let i=0;i<9;i++)if(!b[i]){b[i]=p;const s=mm(b,3-p);b[i]=0;best=p===2?Math.max(best,s):Math.min(best,s)}return best};
+           const draw=()=>{b.forEach((v,i)=>cs[i].textContent=v===1?'❌':v===2?'⭕':'');info.textContent=`Raund ${rd+1}/3 · Xal: ${tot}`};
+           const nr=()=>{b=Array(9).fill(0);lk=false;draw()};
+           const fin=r=>{lk=true;tot+=r===1?20:r===3?8:0;api.score(tot);api.after(700,()=>{rd++;if(rd>=3)api.over(tot);else nr()})};
+           const ai=()=>{const e=[...Array(9).keys()].filter(i=>!b[i]);let m;
+            if(Math.random()<.3)m=pick(e);else{let best=-2;e.forEach(i=>{b[i]=2;const s=mm(b,1);b[i]=0;if(s>best||(s===best&&Math.random()<.4)){best=s;m=i}})}
+            b[m]=2;draw();api.beep(300,.04);const r=w(b);if(r)fin(r);else lk=false};
+           for(let i=0;i<9;i++){const c=h('button','cell xo');
+            c.onclick=()=>{if(lk||b[i])return;b[i]=1;draw();api.beep(500,.04);const r=w(b);if(r)return fin(r);lk=true;api.after(350,ai)};
+            bd.append(c);cs.push(c)}
+           nr()}});
+          })();
+          AZEOF
+          mkdir -p www/games
+          cat > www/games/sim.js <<'AZEOF'
+          (()=>{
+          const{h,rnd,pick,shuffle}=AZ;
+
+          // 1. Çay Ustası
+          AZ.reg({id:'cay',name:'Çay Ustası',cat:'sim',icon:'🍵',k:.3,start(root,api){
+           let lv=0,tg=rnd(40,90),pour=false,rd=0,tot=0,lock=false;
+           const info=AZ.info(root,'Düyməni tut, çay tökülsün. Sarı xəttdə burax!');
+           const wrap=h('div','glass'),fill=h('div','fill'),line=h('div','tline'),btn=h('button','pour','🫖 Tut və tök');
+           wrap.append(fill,line);root.append(wrap,btn);
+           const setT=()=>{line.style.bottom=tg+'%'};setT();
+           btn.onpointerdown=e=>{if(lock)return;pour=true;try{btn.setPointerCapture(e.pointerId)}catch(_){}};
+           const rel=()=>{if(!pour)return;pour=false;lock=true;
+            const err=Math.abs(lv-tg),p=lv>=100?0:Math.max(0,Math.round(100-err*4));tot+=p;rd++;
+            info.textContent=(lv>=100?'Daşdı! ':'')+p+' xal ('+rd+'/5)';api.score(tot);api.beep(p>60?800:200,.12);
+            api.after(900,()=>{if(rd>=5)return api.over(Math.round(tot/5));lv=0;tg=rnd(40,90);setT();fill.style.height='0';lock=false;info.textContent='Sarı xəttdə burax!'})};
+           btn.onpointerup=rel;btn.onpointercancel=rel;
+           api.raf(dt=>{if(pour){lv=Math.min(100,lv+40*dt);fill.style.height=lv+'%';if(lv>=100)rel()}})}});
+
+          // 2. Kabab Ustası
+          AZ.reg({id:'kabab',name:'Kabab Ustası',cat:'sim',icon:'🍢',k:.5,start(root,api){
+           let sc=0,lv=3,t=0;const info=AZ.info(root,''),box=h('div','kb');root.append(box);
+           const ks=[0,1,2,3].map(()=>{const b=h('button','sk','<span>🍢</span><div class="bar"><div class="bf"></div><div class="pz"></div></div>');box.append(b);return{b,f:b.querySelector('.bf'),v:rnd(0,30),s:rnd(14,22)}});
+           const upd=()=>{info.textContent=`❤️ ${lv} · Xal: ${sc} · Ağ zonada çevir!`;api.score(sc)};
+           const rs=k=>{k.v=0;k.s=rnd(14,22)};
+           ks.forEach(k=>k.b.onclick=()=>{const v=k.v;if(v<55){lv--;api.beep(150,.15)}else{sc+=v<70?5:v<95?10:2;api.beep(800,.06)}rs(k);upd();if(lv<=0)api.over(sc)});
+           api.raf(dt=>{t+=dt;ks.forEach(k=>{k.v+=k.s*dt*(1+t/50);
+            if(k.v>105){lv--;rs(k);api.beep(120,.2);upd();if(lv<=0)api.over(sc)}
+            k.f.style.width=Math.min(100,k.v)+'%';k.f.style.background=`hsl(${Math.max(0,130-k.v*1.3)},80%,50%)`})});
+           upd()}});
+
+          // 3. Bazar
+          AZ.reg({id:'bazar',name:'Bazar',cat:'sim',icon:'🏪',k:.1,start(root,api){
+           let m=0,tot=0,pw=1,au=0,t=45;const info=AZ.info(root,''),bt=h('button','big','🍇'),u1=h('button','btn',''),u2=h('button','btn alt','');
+           root.append(bt,u1,u2);
+           const c1=()=>8*pw*pw,c2=()=>12*(au+1)*(au+1);
+           const upd=()=>{info.textContent=`⏱ ${t} · 🪙 ${m} · Cəmi ${tot}`;u1.textContent=`Böyük səbət (+1 toxunuş) — ${c1()}`;u2.textContent=`Köməkçi (+1/san) — ${c2()}`;api.score(tot)};
+           bt.onclick=()=>{m+=pw;tot+=pw;upd();api.beep(500,.02)};
+           u1.onclick=()=>{if(m>=c1()){m-=c1();pw++;upd()}};
+           u2.onclick=()=>{if(m>=c2()){m-=c2();au++;upd()}};
+           api.every(1000,()=>{m+=au;tot+=au;t--;upd();if(t<=0)api.over(tot)});upd()}});
+          })();
+          AZEOF
+
+      - name: Android proyektini yarat (Capacitor)
+        run: |
+          npm init -y
+          npm i @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7 @capacitor/app@7
+          npx cap init AzerPlay az.azerplay.app --web-dir www
+          npx cap add android
+          npx cap sync android
+
+      - name: Ikon yarat
+        continue-on-error: true
+        run: |
+          mkdir -p assets
+          convert -size 1024x1024 gradient:'#1e9bd6-#0b1230' -gravity center -fill '#ffc928' -pointsize 480 -font DejaVu-Sans-Bold -annotate 0 'AP' assets/icon-only.png
+          npm i -D @capacitor/assets@3
+          npx capacitor-assets generate --android --iconBackgroundColor '#0b1230' --iconBackgroundColorDark '#0b1230'
+
+      - name: Ad ve ekran ayarlari
+        run: |
+          sed -i 's/>AzerPlay</>AzərPlay</g' android/app/src/main/res/values/strings.xml
+          sed -i '0,/<activity/s//<activity android:screenOrientation="portrait"/' android/app/src/main/AndroidManifest.xml
+
+      - name: APK build
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk ../AzerPlay.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AzerPlay-apk
+          path: AzerPlay.apk
+
+      - name: Release yarat (telefondan yukle)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: AzərPlay build ${{ github.run_number }}
+          files: AzerPlay.apk
